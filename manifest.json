@@ -1,0 +1,52 @@
+{
+  "name": "MHS Integradora · RH HUB",
+  "short_name": "MHS RH",
+  "description": "Sistema de asistencias y recursos humanos MHS Integradora",
+  "start_url": "/asistencias/mobile.html",
+  "scope": "/asistencias/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "Pase de lista",
+      "short_name": "Pase",
+      "description": "Abrir directamente el pase de lista",
+      "url": "/asistencias/mobile.html#pase",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "CEO Dashboard",
+      "short_name": "CEO",
+      "description": "Dashboard ejecutivo en tiempo real",
+      "url": "/asistencias/ceomobile.html",
+      "icons": [{ "src": "icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
