@@ -9,7 +9,7 @@
  */
 
 // ─── 1. URL del Web App de GAS ──────────────────────────────────────────────
-window.MHS_GAS_URL = 'https://script.google.com/macros/s/TU_DEPLOYMENT_ID/exec';
+window.MHS_GAS_URL = 'https://script.google.com/macros/s/AKfycbzzEv3X_MJ3ZnilwzyjSyHe5GQ2AoaNIC5iBp7dv42T-Suloc_lKbrM4ihrlOQvKmWx/exec';
 
 // ─── 2. Shim de google.script.run ───────────────────────────────────────────
 // Solo se instala cuando no estamos dentro del propio entorno de GAS.
