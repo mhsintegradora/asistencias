@@ -16,7 +16,7 @@
  * ══════════════════════════════════════════════════════════════
  */
 
-window.MHS_GAS_URL = 'https://script.google.com/macros/s/AKfycbzzEv3X_MJ3ZnilwzyjSyHe5GQ2AoaNIC5iBp7dv42T-Suloc_lKbrM4ihrlOQvKmWx/exec';
+window.MHS_GAS_URL = 'https://script.google.com/macros/s/AKfycbwFt6tKmYMdTBo6Y31Ku7ToWUWnTLhHibnLoThI0HkxmVTsI5O8WZtssES7QHSiZ8PC/exec';
 
 // ── Timeout por petición (ms) ─────────────────────────────────────────────
 var MHS_API_TIMEOUT_MS = 30000;   // 30 segundos
