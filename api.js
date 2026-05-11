@@ -23,7 +23,7 @@ var MHS_API_TIMEOUT_MS = 30000;   // 30 segundos
 
 // ── Detectar URL sin configurar y mostrar aviso visible ───────────────────
 (function checkURL() {
-  if (window.MHS_GAS_URL.indexOf('TU_DEPLOYMENT_ID') < 0) return;
+  if (window.MHS_GAS_URL.indexOf('https://script.google.com/macros/s/AKfycbzzEv3X_MJ3ZnilwzyjSyHe5GQ2AoaNIC5iBp7dv42T-Suloc_lKbrM4ihrlOQvKmWx/exec') < 0) return;
 
   // Mostrar banner de error en cuanto cargue el DOM
   function showConfigError() {
