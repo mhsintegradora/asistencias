@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MHS · Test de conexión</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0a0e1a; color: #e6e8ec; padding: 24px; max-width: 900px; margin: 0 auto; line-height: 1.5; }
+  h1 { color: #6a8eff; margin-bottom: 8px; }
+  .test { background: #131826; border: 1px solid #2a3142; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .test h3 { margin: 0 0 8px; font-size: 16px; color: #b8c0d0; }
+  .pending { border-left: 3px solid #6a8eff; }
+  .ok { border-left: 3px solid #3ddc84; }
+  .fail { border-left: 3px solid #ff6b6b; }
+  .result { font-family: ui-monospace, monospace; font-size: 13px; background: #0a0e1a; padding: 12px; border-radius: 4px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; margin-top: 8px; }
+  .ok-text { color: #3ddc84; font-weight: bold; }
+  .fail-text { color: #ff6b6b; font-weight: bold; }
+  .url-box { background: #1a2030; padding: 12px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 12px; word-break: break-all; margin: 8px 0; }
+  button { background: #6a8eff; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; }
+  button:hover { background: #4f6fdb; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .summary { padding: 20px; border-radius: 8px; margin: 20px 0; font-size: 16px; font-weight: bold; }
+  .summary.ok { background: #143824; color: #3ddc84; }
+  .summary.fail { background: #38141f; color: #ff6b6b; }
+  code { background: #1a2030; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>🔧 MHS · Test de conexión GAS ↔ GitHub Pages</h1>
+<p>Este test verifica paso a paso si el frontend puede hablar con el backend.</p>
+
+<div class="test pending" id="test0">
+  <h3>0. URL configurada en api.js</h3>
+  <div class="url-box" id="urlBox">cargando...</div>
+</div>
+
+<button onclick="runTests()" id="runBtn">▶️ Ejecutar tests</button>
+
+<div id="results"></div>
+
+<script src="api.js"></script>
+<script>
+document.getElementById('urlBox').textContent = window.MHS_GAS_URL || 'NO CONFIGURADA';
+if (window.MHS_GAS_URL && window.MHS_GAS_URL.indexOf('TU_DEPLOYMENT_ID') < 0) {
+  document.getElementById('test0').className = 'test ok';
+} else {
+  document.getElementById('test0').className = 'test fail';
+}
+
+async function runTests() {
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('results').innerHTML = '';
+
+  const url = window.MHS_GAS_URL;
+  let allOk = true;
+
+  // ── Test 1: GET al /exec — verifica que el deployment esté activo ────────
+  await runTest('1. GET al /exec (sin body) — debe redirigir', async () => {
+    const r = await fetch(url, { method: 'GET', redirect: 'manual' });
+    const text = await r.text();
+    if (text.indexOf('mhsintegradora.github.io') >= 0) {
+      return { ok: true, msg: '✓ GAS está sirviendo el nuevo doGet (redirige a GitHub Pages)', detail: text.substring(0, 300) };
+    } else if (text.indexOf('MHS Integradora') >= 0 && text.indexOf('Sistema de Recursos') >= 0) {
+      return { ok: false, msg: '✗ GAS está sirviendo el HTML viejo. NO REDESPLEGASTE después de pegar el nuevo code.gs.\n\nSOLUCIÓN: en GAS → Implementar → Nueva implementación → Web App → Cualquier usuario → Implementar', detail: text.substring(0, 500) };
+    } else if (text.indexOf('Sign in') >= 0 || text.indexOf('Iniciar sesión') >= 0) {
+      return { ok: false, msg: '✗ GAS está pidiendo autenticación de Google.\n\nSOLUCIÓN: en GAS → Administrar implementaciones → editar → "Quién tiene acceso" = "Cualquier usuario" (NO "con cuenta de Google")', detail: text.substring(0, 500) };
+    } else {
+      return { ok: false, msg: 'Respuesta inesperada del GAS', detail: text.substring(0, 500) };
+    }
+  });
+
+  // ── Test 2: POST con action=apiGetSedes ─────────────────────────────────
+  await runTest('2. POST con action=apiGetSedes', async () => {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'apiGetSedes' })
+    });
+    const text = await r.text();
+    let json;
+    try { json = JSON.parse(text); }
+    catch(e) {
+      return { ok: false, msg: '✗ La respuesta NO es JSON válido. Probablemente el doPost viejo está activo.\n\nSOLUCIÓN: en GAS → Implementar → Nueva implementación', detail: text.substring(0, 500) };
+    }
+    if (Array.isArray(json) && json.length > 0 && json[0].sede) {
+      return { ok: true, msg: '✓ GAS responde correctamente con las sedes', detail: JSON.stringify(json.slice(0, 3), null, 2) };
+    } else if (json.error) {
+      return { ok: false, msg: '✗ GAS respondió con error: ' + json.error, detail: JSON.stringify(json, null, 2) };
+    } else {
+      return { ok: false, msg: 'Respuesta inesperada', detail: JSON.stringify(json, null, 2) };
+    }
+  });
+
+  // ── Test 3: Test login con apiMobileBootstrap ────────────────────────────
+  await runTest('3. POST login (action=apiMobileBootstrap) con credenciales falsas', async () => {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'apiMobileBootstrap', username: 'test', password: 'fake' })
+    });
+    const text = await r.text();
+    let json;
+    try { json = JSON.parse(text); }
+    catch(e) { return { ok: false, msg: '✗ Respuesta no es JSON', detail: text.substring(0, 500) }; }
+    if (json.ok === false && json.message) {
+      return { ok: true, msg: '✓ GAS rechazó las credenciales correctamente — el endpoint funciona', detail: JSON.stringify(json, null, 2) };
+    } else if (json.error && json.error.indexOf('desconocida') >= 0) {
+      return { ok: false, msg: '✗ El doPost no encuentra apiMobileBootstrap.\n\nSOLUCIÓN: verifica que pegaste el code.gs nuevo COMPLETO y redesplegaste', detail: JSON.stringify(json, null, 2) };
+    } else {
+      return { ok: true, msg: 'Respuesta del endpoint', detail: JSON.stringify(json, null, 2) };
+    }
+  });
+
+  // Summary
+  const summary = document.createElement('div');
+  summary.className = 'summary ' + (allOk ? 'ok' : 'fail');
+  summary.textContent = allOk
+    ? '✅ TODO FUNCIONA — el problema debe estar en mobile.html / index.html. Avísame.'
+    : '❌ Hay un problema con la conexión GAS. Lee los mensajes arriba.';
+  document.getElementById('results').appendChild(summary);
+
+  document.getElementById('runBtn').disabled = false;
+
+  async function runTest(name, fn) {
+    const div = document.createElement('div');
+    div.className = 'test pending';
+    div.innerHTML = '<h3>' + name + '</h3><div>Ejecutando...</div>';
+    document.getElementById('results').appendChild(div);
+
+    try {
+      const result = await fn();
+      div.className = 'test ' + (result.ok ? 'ok' : 'fail');
+      if (!result.ok) allOk = false;
+      div.innerHTML = '<h3>' + name + '</h3>' +
+        '<div class="' + (result.ok ? 'ok-text' : 'fail-text') + '">' + result.msg + '</div>' +
+        (result.detail ? '<div class="result">' + result.detail + '</div>' : '');
+    } catch (err) {
+      div.className = 'test fail';
+      allOk = false;
+      div.innerHTML = '<h3>' + name + '</h3>' +
+        '<div class="fail-text">✗ Error de red: ' + (err.message || err) + '</div>' +
+        '<div class="result">Posibles causas:\n' +
+        '• CORS bloqueado (deployment con acceso "Con cuenta de Google" en vez de "Cualquier usuario")\n' +
+        '• URL del GAS incorrecta\n' +
+        '• Sin conexión a internet</div>';
+    }
+  }
+}
+</script>
+
+</body>
+</html>
