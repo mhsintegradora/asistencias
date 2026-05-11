@@ -392,8 +392,14 @@
   }
 
   function injectHomeButton() {
-    /* Esperamos a que exista el grid de módulos */
+    /* Busca el grid: primero por clase/id, luego por el padre de un .home-module-btn existente */
     var grid = document.querySelector('.home-modules-grid, .modules-grid, #homeModulesGrid');
+    if (!grid) {
+      var existingBtn = document.querySelector('.home-module-btn');
+      if (existingBtn && existingBtn.parentElement) {
+        grid = existingBtn.parentElement;
+      }
+    }
     if (!grid) {
       setTimeout(injectHomeButton, 400);
       return;
@@ -405,11 +411,9 @@
     btn.className = 'home-module-btn';
     btn.setAttribute('onclick', "deskOpen()");
     btn.innerHTML =
-      '<div class="hmb-icon" style="font-size:24px;line-height:1;margin-bottom:4px">🔓</div>' +
+      '<div class="hmb-icon" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fbbf24">🔓</div>' +
       '<div class="hmb-title">Desbloqueo de fechas</div>' +
-      '<div class="hmb-sub" style="font-size:10px;color:rgba(147,175,206,.65);line-height:1.4;margin-top:4px">' +
-        'Solicita apertura de fechas vencidas a soporte' +
-      '</div>';
+      '<div class="hmb-sub">Solicita apertura de fechas vencidas</div>';
     btn.style.display = 'none'; // Se muestra solo para SUPERVISOR / ADMIN
     grid.appendChild(btn);
   }
@@ -655,13 +659,31 @@
    * ──────────────────────────────────────────────────────────────────*/
   function hookUpdateUserPill() {
     var orig = window.updateUserPill;
-    if (typeof orig !== 'function') return false;
-    window.updateUserPill = function () {
+    if (typeof orig !== 'function') {
+      setTimeout(hookUpdateUserPill, 300);
+      return false;
+    }
+    if (orig.__deskHooked) return true;
+    var wrapped = function () {
       var r = orig.apply(this, arguments);
       try { updateDeskBtnVisibility(); } catch (e) {}
       return r;
     };
+    wrapped.__deskHooked = true;
+    window.updateUserPill = wrapped;
     return true;
+  }
+  function hookShowScreen() {
+    var orig = window.showScreen;
+    if (typeof orig !== 'function') { setTimeout(hookShowScreen, 300); return; }
+    if (orig.__deskHooked) return;
+    var wrapped = function (id) {
+      var r = orig.apply(this, arguments);
+      if (id === 'screenHome') setTimeout(updateDeskBtnVisibility, 50);
+      return r;
+    };
+    wrapped.__deskHooked = true;
+    window.showScreen = wrapped;
   }
 
   /* ────────────────────────────────────────────────────────────────────
@@ -685,7 +707,11 @@
     inject();
     hookHomeModulo();
     hookUpdateUserPill();
+    hookShowScreen();
     updateDeskBtnVisibility();
+    setTimeout(updateDeskBtnVisibility, 500);
+    setTimeout(updateDeskBtnVisibility, 1500);
+    setTimeout(updateDeskBtnVisibility, 3000);
   }
 
   if (document.readyState === 'loading') {
